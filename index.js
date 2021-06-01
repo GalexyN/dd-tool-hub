@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const app = express();
+const cookiesFilePath = 'cookies.json';
 
 // Serve the static files from the React app
 app.use('/', express.static(path.join(__dirname, 'client/build')));
@@ -118,8 +119,6 @@ app.post('/api/revenueSTHelper', async (req, res) => {
     headless: false,
   });
   const page = await browser.newPage();
-
-  const cookiesFilePath = 'cookies.json';
 
   const previousSession = fs.existsSync(cookiesFilePath);
   if (previousSession) {
