@@ -23,74 +23,85 @@ app.post('/api/debookCalculator', async (req, res) => {
 
     const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     const page = await browser.newPage();
+    const previousSession = fs.existsSync(cookiesFilePath);
+    if (previousSession) {
+      // If file exist load the cookies
+      const cookiesString = fs.readFileSync(cookiesFilePath);
+      const parsedCookies = JSON.parse(cookiesString);
+      if (parsedCookies.length !== 0) {
+        for (let cookie of parsedCookies) {
+          await page.setCookie(cookie);
+        }
+      }
 
-    const scrapeDebookData = () => {
-      return page.evaluate(async () => {
-        return await new Promise((resolve, reject) => {
-          resolve([
-            document.getElementById('P5_SUMOFGROSSDEBOOK').innerText,
-            document.getElementById('P2_SUMGROSSCREDITAMT').innerText,
-            document.getElementById('P5_START_DATE_DISPLAY').innerText,
-            document.getElementById('P5_END_DATE_DISPLAY').innerText,
-            document.getElementById('P5_CONTRACT_AMOUNT_DISPLAY').innerText,
-          ]);
+      const scrapeDebookData = () => {
+        return page.evaluate(async () => {
+          return await new Promise((resolve, reject) => {
+            resolve([
+              document.getElementById('P5_SUMOFGROSSDEBOOK').innerText,
+              document.getElementById('P2_SUMGROSSCREDITAMT').innerText,
+              document.getElementById('P5_START_DATE_DISPLAY').innerText,
+              document.getElementById('P5_END_DATE_DISPLAY').innerText,
+              document.getElementById('P5_CONTRACT_AMOUNT_DISPLAY').innerText,
+            ]);
+          });
         });
+      };
+
+      await page.setViewport({ width: 1366, height: 768 });
+      await page.goto(`${process.env.DEBOOK_CALCULATOR_URI}`);
+      await page.$eval(
+        `${process.env.DATE_SELECTOR}`,
+        (e, terminationDate) => {
+          e.setAttribute('value', `${terminationDate}`);
+        },
+        terminationDate
+      );
+      await page.$eval(
+        `${process.env.EMAIL_SELECTOR}`,
+        (e, alias) => {
+          console.log(`alias: ${alias}`);
+          e.setAttribute('value', `${alias}`);
+        },
+        alias
+      );
+      await page.$eval(
+        `${process.env.CSL_SELECTOR}`,
+        (e, csl) => {
+          console.log(`csl: ${csl}`);
+          e.setAttribute('value', `${csl}`);
+        },
+        csl
+      );
+
+      await Promise.all([
+        page.click(`${process.env.SUBMIT_BUTTON}`),
+        page.waitForNavigation({ waitUntil: 'networkidle0' }),
+      ]);
+
+      [
+        debookAmount,
+        creditAmount,
+        contractStartDate,
+        contractEndDate,
+        totalContractValue,
+      ] = await scrapeDebookData();
+
+      screenshotBuffer = await page.screenshot({
+        fullPage: true,
+        type: 'jpeg',
       });
-    };
 
-    await page.setViewport({ width: 1366, height: 768 });
-    await page.goto(`${process.env.DEBOOK_CALCULATOR_URI}`);
-    await page.$eval(
-      `${process.env.DATE_SELECTOR}`,
-      (e, terminationDate) => {
-        e.setAttribute('value', `${terminationDate}`);
-      },
-      terminationDate
-    );
-    await page.$eval(
-      `${process.env.EMAIL_SELECTOR}`,
-      (e, alias) => {
-        console.log(`alias: ${alias}`);
-        e.setAttribute('value', `${alias}`);
-      },
-      alias
-    );
-    await page.$eval(
-      `${process.env.CSL_SELECTOR}`,
-      (e, csl) => {
-        console.log(`csl: ${csl}`);
-        e.setAttribute('value', `${csl}`);
-      },
-      csl
-    );
-
-    await Promise.all([
-      page.click(`${process.env.SUBMIT_BUTTON}`),
-      page.waitForNavigation({ waitUntil: 'networkidle0' }),
-    ]);
-
-    [
-      debookAmount,
-      creditAmount,
-      contractStartDate,
-      contractEndDate,
-      totalContractValue,
-    ] = await scrapeDebookData();
-
-    screenshotBuffer = await page.screenshot({
-      fullPage: true,
-      type: 'jpeg',
-    });
-
-    debookData = {
-      csl,
-      debookAmount,
-      creditAmount,
-      contractStartDate,
-      contractEndDate,
-      totalContractValue,
-      screenshotBuffer,
-    };
+      debookData = {
+        csl,
+        debookAmount,
+        creditAmount,
+        contractStartDate,
+        contractEndDate,
+        totalContractValue,
+        screenshotBuffer,
+      };
+    }
 
     return debookData;
   };
