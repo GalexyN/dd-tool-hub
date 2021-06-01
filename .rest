@@ -1,0 +1,38 @@
+POST http://localhost:5000/api/debookCalculator
+Content-Type: application/json
+
+{
+    "contract": ["CSL3525077", "CSL3557471", "CSL3503100"],
+    "alias": "anguyen@linkedin.com",
+    "terminationDate": "11-jun-21"
+}
+###
+POST http://localhost:5000/api/debookCalculator
+Content-Type: application/json
+
+{
+    "contract": ["CSL3525077"],
+    "alias": "anguyen@linkedin.com",
+    "terminationDate": "11-jun-21"
+}
+
+###
+POST http://localhost:5000/revenueSTHelper
+Content-Type: application/json
+
+{
+    "ddCaseUrl": "https://li.crm.dynamics.com/main.aspx?appid=fb091888-3bba-e911-a97f-000d3a37d833&pagetype=entityrecord&etn=incident&id=66b4ea2c-09ad-eb11-a812-000d3a5adff9"
+}
+
+CSL/FLD:
+Originating Opp Link: 
+Termination Date:
+Product and Qty being cancelled:
+Product Line Number:
+Debook Amount:
+Swap Opp Link: 
+Debook Reason:
+Debook Business Reason:
+Detailed Reason: 
+SPM Approval Link:
+Case ID: 
